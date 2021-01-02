@@ -1,0 +1,31 @@
+GET  http://localhost:3001/
+
+### SIGN UP
+POST http://localhost:3001/sign-up/
+Content-Type: application/json
+
+{
+    "username":"user3",
+    "password":"user3"
+}
+
+### LOG IN
+POST  http://localhost:3001/log-in/
+Content-Type: application/json
+
+{
+    "username":"user3",
+    "password":"user3"
+}
+
+### POST
+GET http://localhost:3001/my-name/
+authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXIzIiwiaWF0IjoxNjA5NjA0MjQ1LCJleHAiOjE2MDk2MDQyODV9._frIwePD8UV4XpyjkxcBfVdJtuXG8gpHORXBKhrjP4w
+
+### REFRESH TOKEN
+POST http://localhost:3001/revoke-access-token/
+Content-Type: application/json 
+
+{
+    "refreshToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXIzIiwiaWF0IjoxNjA5NjAyOTU3fQ.f13PDMQgHwG2TLxtC4OAOqTF8aaxcUyhI8WIBqEgMtk"
+}
