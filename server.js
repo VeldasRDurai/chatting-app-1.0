@@ -1,10 +1,13 @@
 require('dotenv').config();
-const express = require("express");
-const app = express();
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose");
+const express      = require("express"); const app = express();
+const cors         = require('cors');
+const cookieParser = require("cookie-parser");
+const bcrypt       = require("bcrypt");
+const jwt          = require("jsonwebtoken");
+const mongoose     = require("mongoose");
 
+app.use(cors( { origin : "http://localhost:3000" , credentials : true } )); 
+app.use(cookieParser());
 app.use(express.json());
 app.listen(3001,() => console.log("Server Started"));
 
@@ -29,60 +32,52 @@ app.post("/sign-up", async ( req , res ) => {
             const hashedPass = await bcrypt.hash( req.body.password , 10 );
             const userdata   = { username : req.body.username , password : hashedPass };
             await users(userdata).save();
-            res.send("ACCOUNT CREATED...!");
-        } else { res.send("USERNAME ALREADY EXIST"); }
-    } catch (e){ res.send("ERROR : \n" + e ); }
+            res.status(201).send("ACCOUNT CREATED...!");
+        } else { res.status(401).send("USERNAME ALREADY EXIST"); }
+    } catch (e){ res.status(500).send(e); }
 });
 
 
 app.post("/log-in", async ( req , res ) => {
-    try {
+    try { 
         const user = await users.findOne({ username : req.body.username });
         if( user === null ){
-            res.send("NO SUCH USERS");
+            res.status(401).send("NO SUCH USERS");
         } else if( await bcrypt.compare( req.body.password , user.password ) ){
-            const accessToken   = jwt.sign({username:user.username} , process.env.ACCESS_TOKEN_SECRET , { expiresIn : 40 } );
+            const accessToken  = jwt.sign({username:user.username} , process.env.ACCESS_TOKEN_SECRET , {expiresIn:"15m"} );
             const refreshToken = jwt.sign({username:user.username} , process.env.REFRESH_TOKEN_SECRET );
             await users.updateOne( {username:req.body.username} , {refreshToken:refreshToken} );
-            res.json({ accessToken : accessToken , refreshToken : refreshToken });
-            // res.send("LOGGED IN...!");
+            res.cookie( "accessToken" , accessToken  , { path:"/" ,  httpOnly:true , maxAge: 900000  } );
+            res.cookie( "refreshToken", refreshToken , { path:"/" ,  httpOnly:true } );            
+            res.send("LOGGED IN...!");
         } else {
-            res.send("WRONG PASSWORD");   
+            res.status(401).send("WRONG PASSWORD");   
         }
-    } catch (e){ res.send("ERROR : \n" + e ) }
+    } catch (e){ res.status(500).send(e) }
 }); 
 
  /*=================================================================================================*/
 
 const authenticateToken = async ( req , res , next ) => {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(" ")[1];
-    if (token === null){
-        return res.send("NO AUTHORIZATION HEADER IS AVAILABLE");
-    }
-    else {
+    try{
+        const payload = await jwt.verify( req.cookies['accessToken'] , process.env.ACCESS_TOKEN_SECRET);
+        req.username = payload.username;
+    } catch {
         try{
-            const payload = await jwt.verify( token , process.env.ACCESS_TOKEN_SECRET);
+            const payload = await jwt.verify( req.cookies['refreshToken'] , process.env.REFRESH_TOKEN_SECRET);
+            const user = await users.findOne({ username : payload.username });
+            if ( user.refreshToken !== req.cookies['refreshToken'] ) throw ("TOKEN NOT MATCHING TOKEN IN DATABASE") ;
+            const accessToken  = jwt.sign({ username : payload.username } , process.env.ACCESS_TOKEN_SECRET , { expiresIn : "15m" });
+            const refreshToken = jwt.sign({ username : payload.username } , process.env.REFRESH_TOKEN_SECRET );
+            await users.updateOne( { username : payload.username } , { refreshToken : refreshToken } );
+            res.cookie( "accessToken" , accessToken  , { path:"/" ,  httpOnly:true , maxAge: 900000 } );
+            res.cookie( "refreshToken", refreshToken , { path:"/" ,  httpOnly:true } );            
             req.username = payload.username;
-        } catch (e) { return res.send("WRONG TOKEN \n" + e ); }
+        } catch (e) { return res.status(401).send( e ); }
     }
     next();
 }
 
 app.get("/my-name" , authenticateToken ,  ( req , res ) => {
-    req.username && res.send("Your name is " + req.username );
-});
-
-/*==================================================================================================*/
-
-app.post("/revoke-access-token" , async (req,res) => {
-    if ( req.body.refreshToken === null ){
-        return res.send("RESPONSE TOKEN NOT FOUND");
-    }
-    try{
-        const payload = await jwt.verify(req.body.refreshToken , process.env.REFRESH_TOKEN_SECRET);
-        const accessToken  = jwt.sign({ username : payload.username } , process.env.ACCESS_TOKEN_SECRET , { expiresIn : 40 });
-        const refreshToken = jwt.sign({ username : payload.username } , process.env.REFRESH_TOKEN_SECRET );
-        res.json({ accessToken : accessToken , refreshToken : refreshToken });
-    } catch (e) { res.send( "ERROR : \n" + e ); }
+    req.username && res.json({ username : req.username });
 });
