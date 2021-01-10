@@ -1,5 +1,3 @@
-chatting-app\node_modules
-
 # Logs
 logs
 *.log
@@ -116,3 +114,27 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+#===================================================================================
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+chatting-app/node_modules
+chatting-app/.pnp
+chatting-app/.pnp.js
+
+# testing
+chatting-app/coverage
+
+# production
+chatting-app/build
+
+# misc
+chatting-app/.DS_Store
+chatting-app/.env.local
+chatting-app/.env.development.local
+chatting-app/.env.test.local
+chatting-app/.env.production.local
+
+chatting-app/npm-debug.log*
+chatting-app/yarn-debug.log*
+chatting-app/yarn-error.log*
