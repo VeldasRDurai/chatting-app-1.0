@@ -9,7 +9,7 @@ const mongoose     = require("mongoose");
 app.use(cors( { origin : "http://localhost:3000" , credentials : true } )); 
 app.use(cookieParser());
 app.use(express.json());
-app.listen(3001,() => console.log("Server Started"));
+app.listen( process.env.PORT || 3001 , () => console.log("Server Started"));
 
 mongoose.connect( "mongodb://localhost:27017/" + "chatting-app" , 
     { useNewUrlParser:true , useUnifiedTopology: true} );
