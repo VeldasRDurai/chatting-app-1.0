@@ -11,7 +11,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.listen( process.env.PORT || 3001 , () => console.log("Server Started"));
 
-mongoose.connect( "mongodb://localhost:27017/" + "chatting-app" , 
+mongoose.connect( "mongodb://localhost:27017/" + "chatting-app" ,  
     { useNewUrlParser:true , useUnifiedTopology: true} );
 
 const historySchema = new mongoose.Schema({
